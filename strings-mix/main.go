@@ -2,13 +2,15 @@ package main
 
 import (
 	"fmt"
-	"sort"
 )
 
 type order struct {
-	v1   int
-	v2   int
-	isEQ bool
+	v1  int
+	v2  int
+	asc int
+	idx int
+	s   string
+	ch  string
 }
 
 func (o *order) Max() int {
@@ -16,6 +18,24 @@ func (o *order) Max() int {
 		return o.v1
 	}
 	return o.v2
+}
+
+func (o *order) CalcIdx() *order {
+	isF := 1
+	o.s = "2:"
+	idx := o.Max()*10000 - o.asc
+	diff := o.v1 - o.v2
+	if diff > 0 {
+		isF = 2
+		o.s = "1:"
+	}
+	if diff == 0 {
+		isF = 0
+		o.s = "=:"
+	}
+	idx += isF * 1000
+	o.idx = idx
+	return o
 }
 
 func Mix(s1, s2 string) string {
@@ -44,45 +64,44 @@ func Mix(s1, s2 string) string {
 
 	res := map[string]order{}
 
-	fmt.Println(s1Amount)
-	fmt.Println(s2Amount)
-
 	for k, v := range s1Amount {
-		res[k] = order{v, res[k].v2, v == res[k].v2}
+		r := []rune(k)
+		res[k] = order{v, res[k].v2, int(r[0]), 0, "", k}
 	}
+
 	for k, v := range s2Amount {
-		res[k] = order{res[k].v1, v, res[k].v1 == v}
+		r := []rune(k)
+		res[k] = order{res[k].v1, v, int(r[0]), 0, "", k}
 	}
+
 	for k, v := range res {
+		res[k] = *v.CalcIdx()
 		if v.v1 < 2 && v.v2 < 2 {
 			delete(res, k)
 		}
 	}
 
-	keys := make([]string, 0, len(res))
-	for k := range res {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	for _, k := range keys {
-		fmt.Print(k, res[k])
-	}
-	fmt.Println("")
-
-	rNEQ := map[string]int{}
-	rEQ := map[string]int{}
-	for k, v := range res {
-		if v.isEQ != true {
-			rNEQ[k] = v.Max()
-		} else {
-			rEQ[k] = v.v1
+	s := ""
+	for len(res) > 0 {
+		max := 0
+		idx := ""
+		for k, v := range res {
+			if v.idx > max {
+				max = v.idx
+				idx = k
+			}
 		}
+		v := res[idx]
+		s += v.s
+		for i := v.Max(); i > 0; i-- {
+			s += v.ch
+		}
+		if len(res) > 1 {
+			s += "/"
+		}
+		delete(res, idx)
 	}
-
-	fmt.Println(res)
-	fmt.Println(rNEQ)
-	fmt.Println(rEQ)
-	return ""
+	return s
 }
 
 func main() {
